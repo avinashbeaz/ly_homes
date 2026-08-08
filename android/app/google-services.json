@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "49223802684",
+    "project_id": "roseday-5d662",
+    "storage_bucket": "roseday-5d662.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49223802684:android:dec9c9dfbe360a48b14839",
+        "android_client_info": {
+          "package_name": "com.example.ly_homes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5lv8q6OipgfV3bbUpkyI8mglrNRmT1K4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
