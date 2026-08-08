@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:ly_homes/screens/wifi.dart';
 
 import 'services/firebase_options.dart';
-import 'screens/dashboard_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
