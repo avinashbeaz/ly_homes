@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <!-- Existing local controller endpoints only. Cloud traffic stays HTTPS. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>192.168.4.1</domain>
+        <domain>192.168.10.11</domain>
+    </domain-config>
+</network-security-config>

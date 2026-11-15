@@ -32,38 +32,42 @@ Future<DeviceInput?> showAddDeviceDialog(BuildContext context) {
             title: const Text('Add device'),
             content: Form(
               key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: controller,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(hintText: 'Device name'),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: kDeviceTypeIcons.entries.map((entry) {
-                      final isSelected = entry.key == selectedType;
-                      return ChoiceChip(
-                        label: Text(entry.key),
-                        avatar: Icon(entry.value, size: 18),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() => selectedType = entry.key);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: controller,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        hintText: 'Device name',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: kDeviceTypeIcons.entries.map((entry) {
+                        final isSelected = entry.key == selectedType;
+                        return ChoiceChip(
+                          label: Text(entry.key),
+                          avatar: Icon(entry.value, size: 18),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setState(() => selectedType = entry.key);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -74,9 +78,9 @@ Future<DeviceInput?> showAddDeviceDialog(BuildContext context) {
               FilledButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
-                    Navigator.of(ctx).pop(
-                      DeviceInput(controller.text.trim(), selectedType),
-                    );
+                    Navigator.of(
+                      ctx,
+                    ).pop(DeviceInput(controller.text.trim(), selectedType));
                   }
                 },
                 child: const Text('Add'),

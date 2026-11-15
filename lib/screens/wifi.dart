@@ -1,6 +1,6 @@
-// ESP8266 WiFi Configurator - Flutter app
+// room controller WiFi Configurator - Flutter app
 //
-// Talks to the ESP8266's REST API over the ESP's own Access Point
+// Talks to the room controller's REST API over the ESP's own Access Point
 // (default http://192.168.4.1). Flow:
 //   1. User connects their phone to the ESP's "LY-HOME" WiFi first
 //      (from the phone's normal WiFi settings, or via the helper button
@@ -15,12 +15,11 @@
 // Android: allow cleartext HTTP to the ESP's local IP. Add to
 // android/app/src/main/AndroidManifest.xml, inside <application ...>:
 //   android:usesCleartextTraffic="true"
-// (The ESP8266 only serves plain HTTP, not HTTPS.)
+// (The room controller only serves plain HTTP, not HTTPS.)
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:ly_homes/screens/dashboard_screen.dart';
 
 class WifiNetwork {
   final String ssid;
@@ -91,25 +90,33 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
           seen.add(n.ssid);
           deduped.add(n);
         }
+        if (!mounted) return;
         setState(() => _networks = deduped);
       } else {
-        setState(() => _errorMessage = 'Scan failed (${response.statusCode}).');
+        if (!mounted) return;
+        setState(
+          () => _errorMessage = 'Couldn’t find networks. Please try again.',
+        );
       }
     } catch (e) {
-      setState(() => _errorMessage =
-          'Could not reach the ESP8266. Make sure your phone is connected '
-          'to the "LY-HOME" WiFi network, then try again.');
+      if (!mounted) return;
+      setState(
+        () => _errorMessage =
+            'Could not reach the room controller. Make sure your phone is connected '
+            'to the "LY-HOME" WiFi network, then try again.',
+      );
     } finally {
-      setState(() => _scanning = false);
+      if (mounted) setState(() => _scanning = false);
     }
   }
+
   Future<void> _resetWifi() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset WiFi credentials?'),
         content: const Text(
-          'This clears the saved network on the ESP8266 and restarts it '
+          'This clears the saved network on the room controller and restarts it '
           'into setup mode (the "LY-HOME" hotspot). You\'ll need to '
           'reconnect your phone to that hotspot to set it up again.',
         ),
@@ -119,39 +126,39 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
             child: const Text('Cancel'),
           ),
           FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Reset'),
           ),
         ],
       ),
     );
- 
+
     if (confirmed != true) return;
- 
- 
+
     try {
       String espBaseUrl2 = 'http://192.168.10.11';
       final response = await http
           .post(Uri.parse('$espBaseUrl2/reset'))
           .timeout(requestTimeout);
- 
+
       final success = response.statusCode == 200;
- 
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? 'WiFi credentials cleared. Device is restarting into setup mode.'
-                : 'Reset request failed (${response.statusCode}).'),
+            content: Text(
+              success
+                  ? 'WiFi credentials cleared. Device is restarting into setup mode.'
+                  : 'Couldn’t reset the controller. Please try again.',
+            ),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
       }
- 
+
       if (success) {
+        if (!mounted) return;
         setState(() {
           _networks = [];
           _lastConnectSuccess = null;
@@ -159,12 +166,14 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
         });
       }
     } catch (e) {
-      setState(() => _errorMessage =
-          'Could not reach the ESP8266 to reset it. Make sure your phone '
-          'is connected to the same network the device is currently on '
-          '(its config AP if unconfigured, or your home WiFi if already set up).');
-    } finally {
-    }
+      if (!mounted) return;
+      setState(
+        () => _errorMessage =
+            'Could not reach the room controller to reset it. Make sure your phone '
+            'is connected to the same network the device is currently on '
+            '(its config AP if unconfigured, or your home WiFi if already set up).',
+      );
+    } finally {}
   }
 
   Future<void> _connect(String ssid, String password) async {
@@ -186,6 +195,7 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final success = data['success'] == true;
 
+      if (!mounted) return;
       setState(() {
         _lastConnectSuccess = success;
         _lastKnownIp = data['ip'] as String?;
@@ -197,23 +207,26 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? 'Connected! Device IP: ${data['ip']}'
-                : (data['message'] ?? 'Failed to connect.')),
+            content: Text(
+              success
+                  ? 'Connected! Device IP: ${data['ip']}'
+                  : (data['message'] ?? 'Failed to connect.'),
+            ),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _lastConnectSuccess = false;
         _errorMessage =
-            'No response from ESP8266. It may have dropped its AP while '
+            'No response from room controller. It may have dropped its AP while '
             'switching networks — check your phone\'s WiFi list for the '
             'device on your home network.';
       });
     } finally {
-      setState(() => _connecting = false);
+      if (mounted) setState(() => _connecting = false);
     }
   }
 
@@ -235,7 +248,9 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
               labelText: network.secure ? 'Password' : 'Open network',
               suffixIcon: network.secure
                   ? IconButton(
-                      icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
+                      icon: Icon(
+                        obscure ? Icons.visibility : Icons.visibility_off,
+                      ),
                       onPressed: () => setDialogState(() => obscure = !obscure),
                     )
                   : null,
@@ -269,9 +284,9 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ESP8266 WiFi Setup'),
+        title: const Text('Connect your controller'),
         actions: [
-           IconButton(
+          IconButton(
             icon: const Icon(Icons.reset_tv),
             tooltip: 'Reset WiFi',
             onPressed: _resetWifi,
@@ -281,26 +296,20 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
             tooltip: 'Rescan',
             onPressed: _scanning ? null : _scanNetworks,
           ),
-          IconButton(
-            icon: const Icon(Icons.home),
-            tooltip: 'HOME',
-            onPressed:() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DashboardScreen(),
-      ),
-    );
-  },
-          ),
-          
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _scanNetworks,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           children: [
+            Text(
+              'A more connected home.',
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 12),
+            const Text('Let’s get your room controller on Wi-Fi.'),
+            const SizedBox(height: 28),
             Card(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: const Padding(
@@ -362,21 +371,23 @@ class _WifiConfigPageState extends State<WifiConfigPage> {
                 ),
               )
             else
-              ..._networks.map((network) => Card(
-                    child: ListTile(
-                      leading: Icon(
-                        _wifiIconFor(network.bars),
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      title: Text(network.ssid),
-                      subtitle: Text('${network.rssi} dBm'),
-                      trailing: network.secure
-                          ? const Icon(Icons.lock, size: 18)
-                          : const Icon(Icons.lock_open, size: 18),
-                      enabled: !_connecting,
-                      onTap: () => _openPasswordDialog(network),
+              ..._networks.map(
+                (network) => Card(
+                  child: ListTile(
+                    leading: Icon(
+                      _wifiIconFor(network.bars),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  )),
+                    title: Text(network.ssid),
+                    subtitle: Text('${network.rssi} dBm'),
+                    trailing: network.secure
+                        ? const Icon(Icons.lock, size: 18)
+                        : const Icon(Icons.lock_open, size: 18),
+                    enabled: !_connecting,
+                    onTap: () => _openPasswordDialog(network),
+                  ),
+                ),
+              ),
             if (_connecting)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
