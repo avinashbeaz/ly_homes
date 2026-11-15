@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/device.dart';
+import 'home_repository.dart';
 import '../../models/room.dart';
 
 /// Firestore layout:
@@ -8,9 +9,9 @@ import '../../models/room.dart';
 ///   {roomId} (doc): { name, icon, createdAt }
 ///     devices (subcollection)
 ///       {deviceId} (doc): { name, type, isOn, createdAt }
-class FirestoreService {
+class FirestoreService implements HomeRepository {
   FirestoreService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+    : _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
 
@@ -22,12 +23,17 @@ class FirestoreService {
 
   // ---------------- Rooms ----------------
 
+  @override
   Stream<List<Room>> roomsStream() {
-    return _roomsRef.orderBy('name').snapshots().map(
+    return _roomsRef
+        .orderBy('name')
+        .snapshots()
+        .map(
           (snap) => snap.docs.map((d) => Room.fromMap(d.id, d.data())).toList(),
         );
   }
 
+  @override
   Future<void> addRoom(String name, {String icon = 'home'}) {
     return _roomsRef.add({
       'name': name.trim(),
@@ -37,11 +43,13 @@ class FirestoreService {
     });
   }
 
+  @override
   Future<void> renameRoom(String roomId, String newName) {
     return _roomsRef.doc(roomId).update({'name': newName.trim()});
   }
 
   /// Deletes a room and all devices nested under it.
+  @override
   Future<void> deleteRoom(String roomId) async {
     final devicesSnap = await _devicesRef(roomId).get();
     final batch = _db.batch();
@@ -54,12 +62,18 @@ class FirestoreService {
 
   // ---------------- Devices ----------------
 
+  @override
   Stream<List<Device>> devicesStream(String roomId) {
-    return _devicesRef(roomId).orderBy('name').snapshots().map(
-          (snap) => snap.docs.map((d) => Device.fromMap(d.id, d.data())).toList(),
+    return _devicesRef(roomId)
+        .orderBy('name')
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map((d) => Device.fromMap(d.id, d.data())).toList(),
         );
   }
 
+  @override
   Future<void> addDevice(String roomId, String name, String type) {
     return _devicesRef(roomId).add({
       'name': name.trim(),
@@ -69,18 +83,26 @@ class FirestoreService {
     });
   }
 
+  @override
   Future<void> renameDevice(String roomId, String deviceId, String newName) {
     return _devicesRef(roomId).doc(deviceId).update({'name': newName.trim()});
   }
 
+  @override
   Future<void> deleteDevice(String roomId, String deviceId) {
     return _devicesRef(roomId).doc(deviceId).delete();
   }
 
+  @override
+  Future<void> setFavorite(String roomId, String deviceId, bool value) =>
+      _devicesRef(roomId).doc(deviceId).update({'isFavorite': value});
+
+  @override
   Future<void> toggleDevice(String roomId, String deviceId, bool isOn) {
     return _devicesRef(roomId).doc(deviceId).update({'isOn': isOn});
   }
-   Future<void> toggleOnline(String roomId) {
+
+  Future<void> toggleOnline(String roomId) {
     return _roomsRef.doc(roomId).update({'isOn': false});
   }
 }
